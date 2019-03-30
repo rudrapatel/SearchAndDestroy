@@ -65,7 +65,7 @@ def display(grid):
 
 def selectCell(map):
         q = []
-        q.append(map[0][0]);
+        q.append(map[0][0])
         for i in range(0,len(map)):
                 for j in range(0,len(map)):
                         if i == 0 and j == 0:
