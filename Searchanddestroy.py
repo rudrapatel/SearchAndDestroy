@@ -77,7 +77,7 @@ def selectCell(map):
                                 q.append(map[i][j])
                                 
 
-        indexOfRandomCell = random.randomint(len(q))
+        indexOfRandomCell = random.randint(0, len(q))
         return q.pop(indexOfRandomCell)
 
 
@@ -89,7 +89,7 @@ def partOne(grid):
         iteration = 0
         while (cellIsATarget(randomCell) == False):
                 iteration+=1
-                randomCell = selectCell()
+                randomCell = selectCell(grid)
 
         print("Number of iterations: " + iteration)
         return randomCell
@@ -98,7 +98,7 @@ def partOne(grid):
 
 def cellIsATarget(n):
         n.numOfTimesExamined+=1
-        if n.isTarget and n.falseNegative < Math.random():
+        if n.isTarget and n.falseNegative < random.random():
                 return True
         n.priorBelief = n.falseNegative * n.priorBelief
         normalize()
@@ -109,12 +109,12 @@ def normalize():
         sumOfProbabilities = 0
         for i in range(0,50):
                 for j in range(0,50):
-                        sumOfProbabilities += map[i][j].priorBelief
+                        sumOfProbabilities += grid[i][j].priorBelief
                         
 
         for i in range(0,50):
                 for j in range(0,50):
-                        map[i][j].priorBelief = map[i][j].priorBelief * (1 / sumOfProbabilities)
+                        grid[i][j].priorBelief = grid[i][j].priorBelief * (1 / sumOfProbabilities)
 
 
                 
