@@ -25,6 +25,9 @@ class node:
                 self.isTarget = False
                 self.numOfTimesExamined = 0
 
+def getActions(startX, startY, endX, endY):
+    
+    return abs(endX - startX) + abs (endY - startY)
 
 def initializeGrid():
         grid = [[node for j in range(50)] for i in range(50)]
@@ -98,6 +101,34 @@ def selectCellRule2(grid):
         indexOfRandomCell = random.randint(0, len(q)-1)
         return q[indexOfRandomCell]
 
+def selectCellRule4(grid, currentCell):
+    q = list()
+    q.append(grid[0][0])
+    actions = list()
+    if (currentCell.row == 0 and currentCell.col == 0):
+        actions.append(1)
+    else:
+        dist = getActions(currentCell.row, currentCell.col, 0, 0)
+        actions.append(dist)
+    for i in range(0,len(grid)):
+        for j in range(0,len(grid)):
+            if i == currentCell.row and j == currentCell.col:
+                continue
+            dist = getActions(currentCell.row, currentCell.col, grid[i][j].row, grid[i][j].col)
+            if (grid[i][j].priorBelief * (1 - grid[i][j].falseNegative))/dist > (q[0].priorBelief * (1 - q[0].falseNegative))/actions[0]:
+                q.clear()
+                actions.clear()
+                q.append(grid[i][j])
+                actions.append(dist)
+
+            elif (grid[i][j].priorBelief * (1 - grid[i][j].falseNegative))/dist == (q[0].priorBelief * (1 - q[0].falseNegative))/actions[0]:
+                q.append(grid[i][j])
+                actions.append(dist)
+                            
+    
+    indexOfRandomCell = random.randint(0, len(q)-1)
+    return q[indexOfRandomCell], actions[indexOfRandomCell]
+
 
 def FindTarget(grid , x):
 
@@ -111,7 +142,7 @@ def FindTarget(grid , x):
                 print("Number of iterations using Rule 1: " + str(iteration))
                 return randomCell
 
-        else:
+        elif x == 2:
                 randomCell = selectCellRule2(grid)
                 iteration = 0
                 while (cellIsATarget(randomCell) == False):
@@ -120,6 +151,18 @@ def FindTarget(grid , x):
 
                 print("Number of iterations using Rule 2: " + str(iteration))
                 return randomCell
+        elif x == 4:
+
+
+            randomCell, actions = selectCellRule4(grid, grid[0][0])
+            iteration = 0
+            while (cellIsATarget(randomCell) == False):
+                iteration+=1
+                randomCell, actions = selectCellRule4(grid, randomCell)
+                iteration += actions
+
+            print("Number of iterations using Problem 4: " + str(iteration))
+            return randomCell
                 
 
 
@@ -149,13 +192,14 @@ def normalize():
             
 grid = initializeGrid()
 gridRule2 = grid
+gridProb4 = grid
 
-x = 1
-target = FindTarget(grid ,x)
+target = FindTarget(grid ,1)
 
-x+=1
-targetTwo = FindTarget(gridRule2,x)
 
+targetTwo = FindTarget(gridRule2,2)
+
+targetProblem4 = FindTarget(gridProb4, 4)
 print("Target found using Rule 1 at: ["+str(target.row)+"]["+str(target.col)+"]")
 print("Target found using Rule 2 at: ["+str(targetTwo.row)+"]["+str(targetTwo.col)+"]")
-
+print("Target found using Prob 4 at: ["+str(targetProblem4.row)+"]["+str(targetProblem4.col)+"]")
