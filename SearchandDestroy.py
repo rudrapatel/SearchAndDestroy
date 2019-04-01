@@ -15,7 +15,10 @@ class node:
         
         def assignTarget(self):
                 self.isTarget = True
-                
+
+        def unassigntarget(self):
+            self.isTarget = False   
+
         def __init__(self, row, col, terrain):
                 self.row = row
                 self.col = col
@@ -24,6 +27,37 @@ class node:
                 self.priorBelief = 0.0004
                 self.isTarget = False
                 self.numOfTimesExamined = 0
+
+def getNeighbors(node, dim):
+    x,y = node
+    if x == 0 and y == 0 :
+        return [(0,1), (1,0)]
+    elif x == dim-1 and y ==0:
+        return [(x-1, y), (x, y+1)]
+    elif x == 0 and y == dim-1:
+        return [(x, y-1), (x+1, y)]
+    elif x == dim - 1 and y == dim-1:
+        return [(x, y-1), (x-1, y)]
+    elif x == 0:
+        return [(x, y-1), (x, y+1), (x+1, y)]
+    elif x == dim-1:
+        return [(x, y-1), (x, y+1), (x-1, y)]
+    elif y == 0:
+        return [(x-1, y), (x, y+1), (x+1, y)]
+    elif y == dim-1:
+        return [(x, y-1), (x-1, y), (x+1, y)]
+    else:
+        return [(x, y-1), (x-1, y), (x+1, y), (x, y+1)]
+
+# Here we get the neighbors, then at random choose one of the them to be the target and then return the terrains as well as the currentTargent 
+def moveTarget(grid, currTarget):
+    neigh = getNeighbors(currTarget, 50)
+    x, y = currTarget
+    grid[x][y].unassigntarget()
+    rand = random.randint(0, len(neigh) - 1)
+    nX, nY = neigh[rand]
+    grid[nX][nY].assignTarget()
+    return [grid[x][y].terrain, grid[nX][nY].terrain], (nX, nY)
 
 def getActions(startX, startY, endX, endY):
     
@@ -58,7 +92,7 @@ def initializeGrid():
         else:
                 print("Terrain is Maze of caves.")
        
-        return grid
+        return grid, (targetRow, targetCol)
 
 def display(grid):
         for i in range(10):
@@ -66,12 +100,14 @@ def display(grid):
                         print(grid[i][j].terrain)
 
 
-def selectCellRule1(grid):
+def selectCellRule1(grid, neighborENV = None):
         q = []
         q.append(grid[0][0])
         for i in range(0,len(grid)):
                 for j in range(0,len(grid)):
                         if i == 0 and j == 0:
+                                continue
+                        if not neighborENV == None and not grid[i][j].terrain in neighborENV: # for problem 2 to only look at the cells whose terrain is the one specified by where the target moved
                                 continue
                         if grid[i][j].priorBelief > q[0].priorBelief:
                                 q.clear()
@@ -84,12 +120,14 @@ def selectCellRule1(grid):
         return q[indexOfRandomCell]
 
 
-def selectCellRule2(grid):
+def selectCellRule2(grid, neighborENV = None):
         q = []
         q.append(grid[0][0])
         for i in range(0,len(grid)):
                 for j in range(0,len(grid)):
                         if i == 0 and j == 0:
+                                continue
+                        if not neighborENV == None and not grid[i][j].terrain in neighborENV: # for problem 2 to only look at the cells whose terrain is the one specified by where the target moved
                                 continue
                         if grid[i][j].priorBelief * (1 - grid[i][j].falseNegative) > q[0].priorBelief * (1 - q[0].falseNegative):
                                 q.clear()
@@ -101,7 +139,7 @@ def selectCellRule2(grid):
         indexOfRandomCell = random.randint(0, len(q)-1)
         return q[indexOfRandomCell]
 
-def selectCellRule4(grid, currentCell):
+def selectCellRule4(grid, currentCell, neighborENV = None):
     q = list()
     q.append(grid[0][0])
     actions = list()
@@ -112,8 +150,11 @@ def selectCellRule4(grid, currentCell):
         actions.append(dist)
     for i in range(0,len(grid)):
         for j in range(0,len(grid)):
-            if i == currentCell.row and j == currentCell.col:
+            if (i == currentCell.row and j == currentCell.col) :
                 continue
+            if not neighborENV == None and not grid[i][j].terrain in neighborENV: # for problem 2 to only look at the cells whose terrain is the one specified by where the target moved
+                continue
+
             dist = getActions(currentCell.row, currentCell.col, grid[i][j].row, grid[i][j].col)
             if (grid[i][j].priorBelief * (1 - grid[i][j].falseNegative))/dist > (q[0].priorBelief * (1 - q[0].falseNegative))/actions[0]:
                 q.clear()
@@ -130,7 +171,7 @@ def selectCellRule4(grid, currentCell):
     return q[indexOfRandomCell], actions[indexOfRandomCell]
 
 
-def FindTarget(grid , x):
+def FindTarget(grid , x, currTarget = None):
 
         if x == 1:
                 randomCell = selectCellRule1(grid)
@@ -163,6 +204,38 @@ def FindTarget(grid , x):
 
             print("Number of iterations using Problem 4: " + str(iteration))
             return randomCell
+        if x == 21:
+                randomCell = selectCellRule1(grid)
+                iteration = 0
+                while (cellIsATarget(randomCell) == False):
+                        iteration+=1
+                        neighbors, currTarget = moveTarget(grid, currTarget)
+                        randomCell = selectCellRule1(grid, neighbors)
+
+                print("Number of iterations using Question 2 Rule 1: " + str(iteration))
+                return randomCell
+
+        elif x == 22:
+                randomCell = selectCellRule2(grid)
+                iteration = 0
+                while (cellIsATarget(randomCell) == False):
+                        iteration+=1
+                        neighbors, currTarget = moveTarget(grid, currTarget)
+                        randomCell = selectCellRule2(grid, neighbors)
+
+                print("Number of iterations using Question 2 Rule 2: " + str(iteration))
+                return randomCell
+        elif x == 24:
+            randomCell, actions = selectCellRule4(grid, grid[0][0])
+            iteration = 0
+            while (cellIsATarget(randomCell) == False):
+                iteration+=1
+                neighbors, currTarget = moveTarget(grid, currTarget)
+                randomCell, actions = selectCellRule4(grid, randomCell, neighbors)
+                iteration += actions
+
+            print("Number of iterations using Question 2 Problem 4: " + str(iteration))
+            return randomCell
                 
 
 
@@ -190,16 +263,27 @@ def normalize():
 
                 
             
-grid = initializeGrid()
+grid, realTarget = initializeGrid()
 gridRule2 = grid
 gridProb4 = grid
+grid2Prob1 = grid
+grid2Prob2 = grid
+grid2Prob4 = grid
+
+realTarget1 = realTarget
+realTarget2 = realTarget
+realTarget4 = realTarget
 
 target = FindTarget(grid ,1)
-
-
 targetTwo = FindTarget(gridRule2,2)
-
 targetProblem4 = FindTarget(gridProb4, 4)
+target2Problem1 = FindTarget(grid2Prob1, 21, realTarget1)
+target2Problem2 = FindTarget(grid2Prob2, 22, realTarget2)
+target2Problem4 = FindTarget(grid2Prob4, 24, realTarget4)
 print("Target found using Rule 1 at: ["+str(target.row)+"]["+str(target.col)+"]")
 print("Target found using Rule 2 at: ["+str(targetTwo.row)+"]["+str(targetTwo.col)+"]")
 print("Target found using Prob 4 at: ["+str(targetProblem4.row)+"]["+str(targetProblem4.col)+"]")
+
+print("Target found using Question 2 Prob 1 at: ["+str(target2Problem1.row)+"]["+str(target2Problem1.col)+"]")
+print("Target found using Question 2 Prob 2 at: ["+str(target2Problem2.row)+"]["+str(target2Problem2.col)+"]")
+print("Target found using Question 2 Prob 4 at: ["+str(target2Problem4.row)+"]["+str(target2Problem4.col)+"]")
